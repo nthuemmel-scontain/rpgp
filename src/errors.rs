@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 use ed25519_dalek::SignatureError;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
@@ -64,6 +66,8 @@ pub enum Error {
     Ed25519SignatureError(#[from] SignatureError),
     #[error("Modification Detection Code error")]
     MdcError,
+    #[error("Invalid size conversion {0}")]
+    TryFromInt(#[from] TryFromIntError),
 }
 
 impl Error {
@@ -97,6 +101,7 @@ impl Error {
             Error::InvalidPacketContent(_) => 25,
             Error::Ed25519SignatureError(_) => 26,
             Error::MdcError => 27,
+            Error::TryFromInt(_) => 28,
         }
     }
 }

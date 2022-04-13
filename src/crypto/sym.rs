@@ -1,9 +1,8 @@
 use aes::{Aes128, Aes192, Aes256};
 use blowfish::Blowfish;
 use cast5::Cast5;
-use cfb_mode::cipher::{AsyncStreamCipher, KeyInit};
+use cfb_mode::cipher::{AsyncStreamCipher, KeyIvInit};
 use cfb_mode::{Decryptor, Encryptor};
-use crypto_common::InnerIvInit;
 use des::TdesEde3;
 use rand::{thread_rng, CryptoRng, Rng};
 use sha1::{Digest, Sha1};
@@ -14,9 +13,8 @@ use crate::errors::{Error, Result};
 
 macro_rules! decrypt {
     ($mode:ident, $key:expr, $iv:expr, $prefix:expr, $data:expr, $bs:expr, $resync:expr) => {{
-        let inner = <$mode as KeyInit>::new_from_slice($key)?;
-        let mode = Decryptor::<$mode>::inner_iv_slice_init(inner, $iv)?;
-        mode.clone().decrypt($prefix);
+        let mode = Decryptor::<$mode>::new_from_slices($key, $iv)?;
+        mode.decrypt($prefix);
 
         // quick check, before decrypting the rest
         ensure_eq!(
@@ -36,6 +34,7 @@ macro_rules! decrypt {
         // let mut mode = Cfb::<$mode>::new_from_slices($key, &$prefix[2..$bs + 2])?;
         // mode.decrypt($data);
         } else {
+            let mode = Decryptor::<$mode>::new_from_slices($key, $iv)?;
             mode.decrypt($data);
         }
     }};
@@ -43,8 +42,7 @@ macro_rules! decrypt {
 
 macro_rules! encrypt {
     ($mode:ident, $key:expr, $iv:expr, $prefix:expr, $data:expr, $bs:expr, $resync:expr) => {{
-        let inner = <$mode as KeyInit>::new_from_slice($key)?;
-        let mode = Encryptor::<$mode>::inner_iv_slice_init(inner, $iv)?;
+        let mode = Encryptor::<$mode>::new_from_slices($key, $iv)?;
         mode.clone().encrypt($prefix);
 
         if $resync {
@@ -53,6 +51,7 @@ macro_rules! encrypt {
         // let mut mode = Cfb::<$mode>::new_var($key, &$prefix[2..$bs + 2])?;
         // mode.encrypt($data);
         } else {
+            let mode = Encryptor::<$mode>::new_from_slices($key, $iv)?;
             mode.encrypt($data);
         }
     }};
@@ -60,15 +59,13 @@ macro_rules! encrypt {
 
 macro_rules! decrypt_regular {
     ($mode:ident, $key:expr, $iv:expr, $ciphertext:expr, $bs:expr) => {{
-        let inner = <$mode as KeyInit>::new_from_slice($key)?;
-        let mode = Decryptor::<$mode>::inner_iv_slice_init(inner, $iv)?;
+        let mode = Decryptor::<$mode>::new_from_slices($key, $iv)?;
         mode.decrypt($ciphertext);
     }};
 }
 macro_rules! encrypt_regular {
     ($mode:ident, $key:expr, $iv:expr, $plaintext:expr, $bs:expr) => {{
-        let inner = <$mode as KeyInit>::new_from_slice($key)?;
-        let mode = Encryptor::<$mode>::inner_iv_slice_init(inner, $iv)?;
+        let mode = Encryptor::<$mode>::new_from_slices($key, $iv)?;
         mode.encrypt($plaintext);
     }};
 }

@@ -181,6 +181,14 @@ pub fn encrypt<R: CryptoRng + Rng>(
 ) -> Result<Vec<Vec<u8>>> {
     debug!("ECDH encrypt");
 
+    // can't fit more size wise
+    let max_size = 239;
+    ensure!(
+        plain.len() < max_size,
+        "unable to encrypt larger than {} bytes",
+        max_size
+    );
+
     let param = build_ecdh_param(&curve.oid(), alg_sym, hash, fingerprint);
 
     ensure_eq!(q.len(), 33, "invalid public key");
@@ -210,7 +218,6 @@ pub fn encrypt<R: CryptoRng + Rng>(
     let len = plain.len();
     let mut plain_padded = plain.to_vec();
     plain_padded.resize(len + 8, 0);
-    println!("{}", len);
 
     let plain_padded_ref = {
         let pos = len;
@@ -232,7 +239,7 @@ pub fn encrypt<R: CryptoRng + Rng>(
     encoded_public.push(0x40);
     encoded_public.extend(x25519_dalek::PublicKey::from(&our_secret).as_bytes().iter());
 
-    let encrypted_key_len = vec![encrypted_key.len() as u8];
+    let encrypted_key_len = vec![u8::try_from(encrypted_key.len())?];
 
     Ok(vec![encoded_public, encrypted_key_len, encrypted_key])
 }
@@ -251,37 +258,43 @@ mod tests {
         let mut rng = ChaChaRng::from_seed([0u8; 32]);
 
         let (pkey, skey) = generate_key(&mut rng);
-        let mut fingerprint = vec![0u8; 20];
-        rng.fill_bytes(&mut fingerprint);
 
-        let plain = b"hello world";
+        for text_size in 1..239 {
+            for _i in 0..10 {
+                let mut fingerprint = vec![0u8; 20];
+                rng.fill_bytes(&mut fingerprint);
 
-        let mpis = match pkey {
-            PublicParams::ECDH {
-                ref curve,
-                ref p,
-                hash,
-                alg_sym,
-            } => encrypt(
-                &mut rng,
-                curve,
-                alg_sym,
-                hash,
-                &fingerprint,
-                p.as_bytes(),
-                &plain[..],
-            )
-            .unwrap(),
-            _ => panic!("invalid key generated"),
-        };
+                let mut plain = vec![0u8; text_size];
+                rng.fill_bytes(&mut plain);
 
-        let mpis = mpis.into_iter().map(Into::into).collect::<Vec<Mpi>>();
+                let mpis = match pkey {
+                    PublicParams::ECDH {
+                        ref curve,
+                        ref p,
+                        hash,
+                        alg_sym,
+                    } => encrypt(
+                        &mut rng,
+                        curve,
+                        alg_sym,
+                        hash,
+                        &fingerprint,
+                        p.as_bytes(),
+                        &plain[..],
+                    )
+                    .unwrap(),
+                    _ => panic!("invalid key generated"),
+                };
 
-        let decrypted = match skey.as_ref().as_repr(&pkey).unwrap() {
-            SecretKeyRepr::ECDH(ref skey) => decrypt(skey, &mpis, &fingerprint).unwrap(),
-            _ => panic!("invalid key generated"),
-        };
+                let mpis = mpis.into_iter().map(Into::into).collect::<Vec<Mpi>>();
 
-        assert_eq!(&plain[..], &decrypted[..]);
+                let decrypted = match skey.as_ref().as_repr(&pkey).unwrap() {
+                    SecretKeyRepr::ECDH(ref skey) => decrypt(skey, &mpis, &fingerprint).unwrap(),
+                    _ => panic!("invalid key generated"),
+                };
+
+                assert_eq!(&plain[..], &decrypted[..]);
+            }
+        }
     }
 }
