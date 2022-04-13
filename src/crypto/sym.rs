@@ -43,7 +43,7 @@ macro_rules! decrypt {
 macro_rules! encrypt {
     ($mode:ident, $key:expr, $iv:expr, $prefix:expr, $data:expr, $bs:expr, $resync:expr) => {{
         let mode = Encryptor::<$mode>::new_from_slices($key, $iv)?;
-        mode.clone().encrypt($prefix);
+        mode.encrypt($prefix);
 
         if $resync {
             unimplemented!("CFB resync is not here");
