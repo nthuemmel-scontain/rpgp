@@ -146,8 +146,8 @@ impl From<block_modes::BlockModeError> for Error {
     }
 }
 
-impl From<cipher::errors::InvalidLength> for Error {
-    fn from(_: cipher::errors::InvalidLength) -> Error {
+impl From<cipher::InvalidLength> for Error {
+    fn from(_: cipher::InvalidLength) -> Error {
         Error::CfbInvalidKeyIvLength
     }
 }
@@ -157,15 +157,16 @@ impl From<block_padding::UnpadError> for Error {
         Error::UnpadError
     }
 }
-impl From<block_padding::PadError> for Error {
-    fn from(_: block_padding::PadError) -> Error {
-        Error::PadError
-    }
-}
 
 impl From<String> for Error {
     fn from(err: String) -> Error {
         Error::Message(err)
+    }
+}
+
+impl From<derive_builder::UninitializedFieldError> for Error {
+    fn from(err: derive_builder::UninitializedFieldError) -> Error {
+        Error::Message(err.to_string())
     }
 }
 

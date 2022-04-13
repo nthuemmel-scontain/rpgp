@@ -1,4 +1,5 @@
 use block_padding::{Padding, Pkcs7};
+use generic_array::{typenum::U8, GenericArray};
 use rand::{CryptoRng, Rng};
 use x25519_dalek::{PublicKey, StaticSecret};
 use zeroize::{Zeroize, Zeroizing};
@@ -135,12 +136,23 @@ pub fn decrypt(priv_key: &ECDHSecretKey, mpis: &[Mpi], fingerprint: &[u8]) -> Re
     encrypted_session_key_vec[(encrypted_key_len - encrypted_session_key.len())..]
         .copy_from_slice(encrypted_session_key);
 
-    let decrypted_key_padded = aes_kw::unwrap(&z, &encrypted_session_key_vec)?;
-
+    let mut decrypted_key_padded = aes_kw::unwrap(&z, &encrypted_session_key_vec)?;
     // PKCS5 unpadding (PKCS5 is PKCS7 with a blocksize of 8)
-    let decrypted_key = Pkcs7::unpad(&decrypted_key_padded)?;
+    {
+        let len = decrypted_key_padded.len();
+        let block_size = 8;
+        ensure!(len % block_size == 0, "invalid key length {}", len);
+        ensure!(!decrypted_key_padded.is_empty(), "empty key is not valid");
 
-    Ok(decrypted_key.to_vec())
+        // grab the last block
+        let offset = len - block_size;
+        let last_block = GenericArray::<u8, U8>::from_slice(&decrypted_key_padded[offset..]);
+        let unpadded_last_block = Pkcs7::unpad(last_block)?;
+        let unpadded_len = offset + unpadded_last_block.len();
+        decrypted_key_padded.truncate(unpadded_len);
+    }
+
+    Ok(decrypted_key_padded)
 }
 
 /// Key Derivation Function for ECDH (as defined in RFC 6637).
@@ -198,7 +210,19 @@ pub fn encrypt<R: CryptoRng + Rng>(
     let len = plain.len();
     let mut plain_padded = plain.to_vec();
     plain_padded.resize(len + 8, 0);
-    let plain_padded_ref = Pkcs7::pad(&mut plain_padded, len, 8)?;
+    println!("{}", len);
+
+    let plain_padded_ref = {
+        let pos = len;
+        let block_size = 8;
+        let bs = block_size * (pos / block_size);
+        if plain_padded.len() < bs || plain_padded.len() - bs < block_size {
+            bail!("unable to pad");
+        }
+        let buf = GenericArray::<u8, U8>::from_mut_slice(&mut plain_padded[bs..bs + block_size]);
+        Pkcs7::pad(buf, pos - bs);
+        &plain_padded[..bs + block_size]
+    };
 
     // Peform AES Key Wrap
     let encrypted_key = aes_kw::wrap(&z, plain_padded_ref)?;
