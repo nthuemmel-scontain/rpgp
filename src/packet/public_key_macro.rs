@@ -175,7 +175,6 @@ macro_rules! impl_public_key {
             /// Returns the fingerprint of this key.
             fn fingerprint(&self) -> Vec<u8> {
                 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
-                use md5::Md5;
                 use sha1::{Digest, Sha1};
 
                 use $crate::ser::Serialize;
@@ -208,11 +207,7 @@ macro_rules! impl_public_key {
                         h.finalize().to_vec()
                     }
                     KeyVersion::V2 | KeyVersion::V3 => {
-                        let mut h = Md5::new();
-                        self.public_params
-                            .to_writer(&mut h)
-                            .expect("write to hasher");
-                        h.finalize().to_vec()
+                        unimplemented!("V2 and V3 keys")
                     }
                 }
             }

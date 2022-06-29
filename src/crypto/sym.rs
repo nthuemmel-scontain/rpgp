@@ -1,12 +1,8 @@
 use aes::{Aes128, Aes192, Aes256};
-use blowfish::Blowfish;
-use cast5::Cast5;
 use cfb_mode::cipher::{AsyncStreamCipher, NewCipher};
 use cfb_mode::Cfb;
-use des::TdesEde3;
 use rand::{thread_rng, CryptoRng, Rng};
 use sha1::{Digest, Sha1};
-use twofish::Twofish;
 
 use crate::crypto::checksum;
 use crate::errors::{Error, Result};
@@ -213,35 +209,9 @@ impl SymmetricKeyAlgorithm {
                 SymmetricKeyAlgorithm::Plaintext => {}
                 SymmetricKeyAlgorithm::IDEA => unimplemented_err!("IDEA decrypt"),
 
-                SymmetricKeyAlgorithm::TripleDES => {
-                    decrypt!(
-                        TdesEde3,
-                        key,
-                        iv_vec,
-                        encrypted_prefix,
-                        encrypted_data,
-                        bs,
-                        resync
-                    );
-                }
-                SymmetricKeyAlgorithm::CAST5 => decrypt!(
-                    Cast5,
-                    key,
-                    iv_vec,
-                    encrypted_prefix,
-                    encrypted_data,
-                    bs,
-                    resync
-                ),
-                SymmetricKeyAlgorithm::Blowfish => decrypt!(
-                    Blowfish,
-                    key,
-                    iv_vec,
-                    encrypted_prefix,
-                    encrypted_data,
-                    bs,
-                    resync
-                ),
+                SymmetricKeyAlgorithm::TripleDES => unimplemented_err!("TripleDES"),
+                SymmetricKeyAlgorithm::CAST5 => unimplemented_err!("CAST5"),
+                SymmetricKeyAlgorithm::Blowfish => unimplemented_err!("Blowfish"),
                 SymmetricKeyAlgorithm::AES128 => decrypt!(
                     Aes128,
                     key,
@@ -269,15 +239,7 @@ impl SymmetricKeyAlgorithm {
                     bs,
                     resync
                 ),
-                SymmetricKeyAlgorithm::Twofish => decrypt!(
-                    Twofish,
-                    key,
-                    iv_vec,
-                    encrypted_prefix,
-                    encrypted_data,
-                    bs,
-                    resync
-                ),
+                SymmetricKeyAlgorithm::Twofish => unimplemented_err!("Twofish"),
                 SymmetricKeyAlgorithm::Camellia128 => {
                     unimplemented_err!("Camellia 128 not yet available")
                 }
@@ -307,13 +269,9 @@ impl SymmetricKeyAlgorithm {
         match self {
             SymmetricKeyAlgorithm::Plaintext => {}
             SymmetricKeyAlgorithm::IDEA => unimplemented_err!("IDEA decrypt"),
-            SymmetricKeyAlgorithm::TripleDES => {
-                decrypt_regular!(TdesEde3, key, iv_vec, ciphertext, self.block_size());
-            }
-            SymmetricKeyAlgorithm::CAST5 => decrypt_regular!(Cast5, key, iv_vec, ciphertext, bs),
-            SymmetricKeyAlgorithm::Blowfish => {
-                decrypt_regular!(Blowfish, key, iv_vec, ciphertext, self.block_size())
-            }
+            SymmetricKeyAlgorithm::TripleDES => unimplemented_err!("cipher"),
+            SymmetricKeyAlgorithm::CAST5 => unimplemented_err!("cipher"),
+            SymmetricKeyAlgorithm::Blowfish => unimplemented_err!("cipher"),
             SymmetricKeyAlgorithm::AES128 => {
                 decrypt_regular!(Aes128, key, iv_vec, ciphertext, self.block_size())
             }
@@ -323,9 +281,7 @@ impl SymmetricKeyAlgorithm {
             SymmetricKeyAlgorithm::AES256 => {
                 decrypt_regular!(Aes256, key, iv_vec, ciphertext, self.block_size())
             }
-            SymmetricKeyAlgorithm::Twofish => {
-                decrypt_regular!(Twofish, key, iv_vec, ciphertext, self.block_size())
-            }
+            SymmetricKeyAlgorithm::Twofish => unimplemented_err!("cipher"),
             SymmetricKeyAlgorithm::Camellia128 => {
                 unimplemented_err!("Camellia 128 not yet available")
             }
@@ -452,15 +408,9 @@ impl SymmetricKeyAlgorithm {
             match self {
                 SymmetricKeyAlgorithm::Plaintext => {}
                 SymmetricKeyAlgorithm::IDEA => unimplemented_err!("IDEA encrypt"),
-                SymmetricKeyAlgorithm::TripleDES => {
-                    encrypt!(TdesEde3, key, iv_vec, prefix, data, bs, resync);
-                }
-                SymmetricKeyAlgorithm::CAST5 => {
-                    encrypt!(Cast5, key, iv_vec, prefix, data, bs, resync)
-                }
-                SymmetricKeyAlgorithm::Blowfish => {
-                    encrypt!(Blowfish, key, iv_vec, prefix, data, bs, resync)
-                }
+                SymmetricKeyAlgorithm::TripleDES => unimplemented_err!("cipher"),
+                SymmetricKeyAlgorithm::CAST5 => unimplemented_err!("cipher"),
+                SymmetricKeyAlgorithm::Blowfish => unimplemented_err!("cipher"),
                 SymmetricKeyAlgorithm::AES128 => {
                     encrypt!(Aes128, key, iv_vec, prefix, data, bs, resync)
                 }
@@ -470,9 +420,7 @@ impl SymmetricKeyAlgorithm {
                 SymmetricKeyAlgorithm::AES256 => {
                     encrypt!(Aes256, key, iv_vec, prefix, data, bs, resync)
                 }
-                SymmetricKeyAlgorithm::Twofish => {
-                    encrypt!(Twofish, key, iv_vec, prefix, data, bs, resync)
-                }
+                SymmetricKeyAlgorithm::Twofish => unimplemented_err!("cipher"),
                 SymmetricKeyAlgorithm::Camellia128 => {
                     unimplemented_err!("Camellia 128 not yet available")
                 }
@@ -502,17 +450,13 @@ impl SymmetricKeyAlgorithm {
         match self {
             SymmetricKeyAlgorithm::Plaintext => {}
             SymmetricKeyAlgorithm::IDEA => unimplemented_err!("IDEA encrypt"),
-            SymmetricKeyAlgorithm::TripleDES => {
-                encrypt_regular!(TdesEde3, key, iv_vec, plaintext, bs);
-            }
-            SymmetricKeyAlgorithm::CAST5 => encrypt_regular!(Cast5, key, iv_vec, plaintext, bs),
-            SymmetricKeyAlgorithm::Blowfish => {
-                encrypt_regular!(Blowfish, key, iv_vec, plaintext, bs)
-            }
+            SymmetricKeyAlgorithm::TripleDES => unimplemented_err!("cipher"),
+            SymmetricKeyAlgorithm::CAST5 => unimplemented_err!("cipher"),
+            SymmetricKeyAlgorithm::Blowfish => unimplemented_err!("cipher"),
             SymmetricKeyAlgorithm::AES128 => encrypt_regular!(Aes128, key, iv_vec, plaintext, bs),
             SymmetricKeyAlgorithm::AES192 => encrypt_regular!(Aes192, key, iv_vec, plaintext, bs),
             SymmetricKeyAlgorithm::AES256 => encrypt_regular!(Aes256, key, iv_vec, plaintext, bs),
-            SymmetricKeyAlgorithm::Twofish => encrypt_regular!(Twofish, key, iv_vec, plaintext, bs),
+            SymmetricKeyAlgorithm::Twofish => unimplemented_err!("cipher"),
             SymmetricKeyAlgorithm::Camellia128 => {
                 unimplemented_err!("Camellia 128 not yet available")
             }

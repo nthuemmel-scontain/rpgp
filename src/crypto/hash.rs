@@ -5,8 +5,6 @@ use rsa::Hash;
 
 use digest::{Digest, FixedOutput};
 use generic_array::typenum::Unsigned;
-use md5::Md5;
-use ripemd160::Ripemd160;
 use sha1::Sha1;
 
 use crate::errors::{Error, Result};
@@ -98,9 +96,7 @@ macro_rules! derive_hasher {
     };
 }
 
-derive_hasher!(Md5Hasher, Md5);
 derive_hasher!(Sha1Hasher, Sha1);
-derive_hasher!(Ripemd160Hasher, Ripemd160);
 derive_hasher!(Sha2_256Hasher, sha2::Sha256);
 derive_hasher!(Sha2_384Hasher, sha2::Sha384);
 derive_hasher!(Sha2_512Hasher, sha2::Sha512);
@@ -112,9 +108,7 @@ impl HashAlgorithm {
     /// Create a new hasher.
     pub fn new_hasher(self) -> Result<Box<dyn Hasher>> {
         match self {
-            HashAlgorithm::MD5 => Ok(Box::new(Md5Hasher::default())),
             HashAlgorithm::SHA1 => Ok(Box::new(Sha1Hasher::default())),
-            HashAlgorithm::RIPEMD160 => Ok(Box::new(Ripemd160Hasher::default())),
             HashAlgorithm::SHA2_256 => Ok(Box::new(Sha2_256Hasher::default())),
             HashAlgorithm::SHA2_384 => Ok(Box::new(Sha2_384Hasher::default())),
             HashAlgorithm::SHA2_512 => Ok(Box::new(Sha2_512Hasher::default())),
@@ -129,9 +123,7 @@ impl HashAlgorithm {
     /// Calculate the digest of the given input data.
     pub fn digest(self, data: &[u8]) -> Result<Vec<u8>> {
         Ok(match self {
-            HashAlgorithm::MD5 => Md5::digest(data).to_vec(),
             HashAlgorithm::SHA1 => Sha1::digest(data).to_vec(),
-            HashAlgorithm::RIPEMD160 => Ripemd160::digest(data).to_vec(),
             HashAlgorithm::SHA2_256 => sha2::Sha256::digest(data).to_vec(),
             HashAlgorithm::SHA2_384 => sha2::Sha384::digest(data).to_vec(),
             HashAlgorithm::SHA2_512 => sha2::Sha512::digest(data).to_vec(),
@@ -147,9 +139,7 @@ impl HashAlgorithm {
     /// Returns the expected digest size for the given algorithm.
     pub fn digest_size(self) -> usize {
         match self {
-            HashAlgorithm::MD5 => <Md5 as FixedOutput>::OutputSize::to_usize(),
             HashAlgorithm::SHA1 => <Sha1 as FixedOutput>::OutputSize::to_usize(),
-            HashAlgorithm::RIPEMD160 => <Ripemd160 as FixedOutput>::OutputSize::to_usize(),
             HashAlgorithm::SHA2_256 => <sha2::Sha256 as FixedOutput>::OutputSize::to_usize(),
             HashAlgorithm::SHA2_384 => <sha2::Sha384 as FixedOutput>::OutputSize::to_usize(),
             HashAlgorithm::SHA2_512 => <sha2::Sha512 as FixedOutput>::OutputSize::to_usize(),
